@@ -23,7 +23,7 @@ var appli = {
     var short_url = sha1.substring(0,9); 
     console.log("Just got it short :"+short_url);
     console.log('Good : '+url+' became '+sha1+' or in short '+short_url);
-    this.body = 'http://w000t.fr/'+short_url;
+    this.body = 'http://plopplop.herokuapp.com/'+short_url;
 
     console.log('Now we add it to the hash');
     url_to_index[url] = short_url;
