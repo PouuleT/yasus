@@ -1,0 +1,19 @@
+{
+  "name": "plopplop",
+  "version": "0.0.0",
+  "description": "plop",
+  "main": "application.js",
+  "scripts": {
+    "start": "node --harmony --harmony_generators server.js"
+  },
+  "engines": {
+    "node": "^0.11.2"
+  },
+  "author": "",
+  "license": "BSD",
+  "dependencies": {
+    "koa-body": "0.0.4",
+    "koa-body-parser": "~1.0.0"
+  },
+  "devDependencies": {}
+}
