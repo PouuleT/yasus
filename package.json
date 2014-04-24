@@ -12,6 +12,7 @@
   "author": "",
   "license": "BSD",
   "dependencies": {
+    "crypto": "0.0.3",
     "koa-body": "0.0.4",
     "koa-body-parser": "~1.0.0"
   },
