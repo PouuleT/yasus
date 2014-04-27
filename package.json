@@ -18,7 +18,8 @@
     "koa-body-parser": "~1.0.0",
     "koa-logger": "~1.2.0",
     "koa-router": "~3.1.2",
-    "redis": "^0.10.1"
+    "redis": "^0.10.1",
+    "co-redis": "~1.1.0"
   },
   "devDependencies": {}
 }

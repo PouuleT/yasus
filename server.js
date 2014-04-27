@@ -1,7 +1,9 @@
 var logger   = require('koa-logger');
 var router   = require('koa-router');
-var crypto   = require('crypto');
 var koa_body = require('koa-body-parser');
+var crypto   = require('crypto');
+var coRedis  = require('co-redis');
+var redis    = require('redis');
 
 var koa = require('koa');
 var app = koa();
@@ -10,13 +12,12 @@ app.use(logger());
 app.use(router(app));
 
 // Database
-var url_to_index = new Array();
-var short_to_url = new Array();
+var client = redis.createClient();
+var redisClient = coRedis(client);
 
 // Routes
 app.get('/add', shorten);
 app.get('/:hash', redirect);
-
 
 // Function that will return a trunked hash of the
 // url given in entry
@@ -25,22 +26,21 @@ function *shorten(){
   var url = this.request.query.url;
   console.log("Starting ... the short stuff with ",url);
 
-  var short_url; 
   // We check if this URL is already shortened
-  if ( url_to_index[url] != undefined ) {
-    short_url = url_to_index[url];
-    console.log('The url was already in DB '+short_url);
+  var short_url = yield redisClient.hget( 'url_to_short', url.toString());
+  if ( short_url != undefined ) {
+    console.log('The url was already in DB ',short_url);
   }
   else {
     // We need to hash the given url
     var sha1 = crypto.createHash('sha1').update(url).digest("hex");
     console.log("Just got the sha1 : "+sha1);
     // We then truncate the hash to just 10 characters
-    short_url = sha1.substring(0,9); 
+    short_url = sha1.substring(0,9);
     console.log("Just got it short :"+short_url);
     // Now we add it to the hashes in DB
-    url_to_index[url] = short_url;
-    short_to_url[short_url] = url;
+    redisClient.hset( 'url_to_short', url, short_url);
+    redisClient.hset( 'short_to_url', short_url, url);
   }
   console.log('Good : '+url+' became '+short_url);
 
@@ -54,11 +54,10 @@ function *shorten(){
 // and redirect accordingly
 function *redirect(){
   var hash = this.params.hash;
-  console.log('Just got : '.hash);
+  console.log('Just got : '+hash);
   console.log("Redirecting...to ");
-  console.log(hash);
   // We first check if the url given is in the DB
-  long_url = short_to_url[hash];
+  var long_url= yield redisClient.hget( 'short_to_url', hash);
   if (long_url != undefined) {
     // If we found it, we redirect to the url found
     // We check that it has a http or https at the begining
