@@ -31,7 +31,7 @@ function *shorten(){
     console.log('The url was already in DB '+short_url);
   }
   else {
-    // We need to hash the givem url
+    // We need to hash the given url
     var sha1 = crypto.createHash('sha1').update(url).digest("hex");
     console.log("Just got the sha1 : "+sha1);
     // We then truncate the hash to just 10 characters
@@ -42,8 +42,9 @@ function *shorten(){
     short_to_url[short_url] = url;
   }
   console.log('Good : '+url+' became '+short_url);
+
   // We return directly the link for easy parsing
-  this.body = this.request.host+'/'+short_url;
+  this.body = 'http://'+this.request.host+'/'+short_url;
 
   console.log("Done");
 }
@@ -57,6 +58,13 @@ function *redirect(hash){
   long_url = short_to_url[hash];
   if (long_url != undefined) {
     // If we found it, we redirect to the url found
+    // We check that it has a http or https at the begining
+    var regHttp = /^http/;
+    if (!regHttp.test(long_url) ) {
+      // If not we add HTTP by default
+      long_url = 'http://'+long_url;
+    }
+    // Else we let the HTTP or HTTPS given
     console.log("going to redirect to "+long_url);
     this.redirect(long_url)
   } else {
