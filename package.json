@@ -13,10 +13,12 @@
   "license": "BSD",
   "dependencies": {
     "crypto": "0.0.3",
+    "koa": "~0.5.5",
     "koa-body": "0.0.4",
     "koa-body-parser": "~1.0.0",
-    "koa-route": "~1.1.2",
-    "koa-logger": "~1.2.0"
+    "koa-logger": "~1.2.0",
+    "koa-router": "~3.1.2",
+    "redis": "^0.10.1"
   },
   "devDependencies": {}
 }

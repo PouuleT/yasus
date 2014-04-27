@@ -1,20 +1,21 @@
 var logger   = require('koa-logger');
+var router   = require('koa-router');
 var crypto   = require('crypto');
 var koa_body = require('koa-body-parser');
-var route    = require('koa-route');
 
 var koa = require('koa');
 var app = koa();
 
 app.use(logger());
+app.use(router(app));
 
 // Database
 var url_to_index = new Array();
 var short_to_url = new Array();
 
 // Routes
-app.use(route.get('/add', shorten));
-app.use(route.get('/:hash', redirect));
+app.get('/add', shorten);
+app.get('/:hash', redirect);
 
 
 // Function that will return a trunked hash of the
@@ -51,7 +52,9 @@ function *shorten(){
 
 // Function that will look in DB for the hash there is in the url
 // and redirect accordingly
-function *redirect(hash){
+function *redirect(){
+  var hash = this.params.hash;
+  console.log('Just got : '.hash);
   console.log("Redirecting...to ");
   console.log(hash);
   // We first check if the url given is in the DB
