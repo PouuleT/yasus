@@ -32,7 +32,7 @@ function *shorten(){
   redisClient.incr('nbOfw00t:total'); // Update number total of access to the app
 
   // We check if this URL is already shortened
-  var short_url_id = yield redisClient.hget( 'url_to_short', url.toString());
+  var short_url_id = yield redisClient.hget( 'url_to_short_id', url.toString());
   if ( short_url_id != undefined ) {
     // Update number of add while short url already existed
     var cpt = yield redisClient.incr('nbOfw00t:alreadyExisting');
@@ -51,10 +51,10 @@ function *shorten(){
     // We increment the id
     var newId = yield redisClient.incr( 'next.urls.id' );
     // Now we add all the info to the hashes in DB
-    redisClient.hset( 'url_to_short', url, newId);
+    redisClient.hset( 'url_to_short_id', url, newId);
     redisClient.hset( 'url:'+newId, 'url', url);
     redisClient.hset( 'url:'+newId, 'sha', short_url);
-    redisClient.hset( 'short_to_url', short_url, newId);
+    redisClient.hset( 'short_to_url_id', short_url, newId);
   }
   console.log('Good : '+url+' became '+short_url);
 
@@ -74,7 +74,7 @@ function *redirect(){
   redisClient.incr('nbOfAccess:total');
 
   // We first check if the url given is in the DB
-  var long_url_id = yield redisClient.hget( 'short_to_url', hash);
+  var long_url_id = yield redisClient.hget( 'short_to_url_id', hash);
   if (long_url_id != undefined) {
     // If we found it, we redirect to the url found
     // We first get the full url via the url id
