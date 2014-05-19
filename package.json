@@ -19,7 +19,8 @@
     "koa-logger": "~1.2.0",
     "koa-router": "~3.1.2",
     "redis": "^0.10.1",
-    "co-redis": "~1.1.0"
+    "co-redis": "~1.1.0",
+    "co-body": "0.0.1"
   },
   "devDependencies": {}
 }

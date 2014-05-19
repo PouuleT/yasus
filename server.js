@@ -1,6 +1,6 @@
 var logger   = require('koa-logger');
 var router   = require('koa-router');
-var koa_body = require('koa-body-parser');
+var parse    = require('co-body');
 var crypto   = require('crypto');
 var coRedis  = require('co-redis');
 var redis    = require('redis');
@@ -12,21 +12,28 @@ app.use(logger());
 app.use(router(app));
 
 // Database
-var client = redis.createClient();
+var client      = redis.createClient();
 var redisClient = coRedis(client);
 
 // We set a default port if process.env.PORT is not defined
 var appPort = process.env.PORT || 3003;
 
 // Routes
-app.get('/add', shorten);
+app.post('/add', shorten);
 app.get('/:hash', redirect);
 
 // Function that will return a trunked hash of the
 // url given in entry
 function *shorten(){
-  // We get the url in the params
-  var url = this.request.query.url;
+  // We get the url in the params (given as JSON data on a POST request)
+  var jsonParams = yield parse.json(this);
+  if ( jsonParams == undefined )
+    this.throw(500, 'Problem with your URL param');
+
+  var url = jsonParams.url;
+  if ( url == undefined )
+    this.throw(500, 'Problem with your URL param');
+
   var short_url;
   console.log("Starting ... the short stuff with ",url);
   redisClient.incr('nbOfw00t:total'); // Update number total of access to the app
