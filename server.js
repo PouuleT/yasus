@@ -20,6 +20,8 @@ var appPort = process.env.PORT || 3003;
 
 // Routes
 app.post('/add', shorten);
+app.post('/user/add', addUser);
+app.post('/session/add', createSession);
 app.get('/:hash', redirect);
 
 // Function that will return a trunked hash of the
@@ -33,6 +35,20 @@ function *shorten(){
   var url = jsonParams.url;
   if ( url == undefined )
     this.throw(500, 'Problem with your URL param');
+
+  var sessionId = jsonParams.sessionId;
+  if ( sessionId == undefined ) {
+    // There is no session id, it's an anonymous user
+    console.log('Going to w00t an anonymous user');
+  }
+  else {
+    // Going to get the userId from the sessionId
+    var userId = yield redisClient.hget( 'session_id_to_user_id', sessionId);
+    if ( userId == undefined )
+      this.throw(500, 'Invalid Session Id');
+
+    console.log(' Just got the userId '+userId+' from the sessionId '+sessionId);
+  }
 
   var short_url;
   console.log("Starting ... the short stuff with ",url);
@@ -100,6 +116,10 @@ function *redirect(){
     redisClient.hset( 'url:'+long_url_id, 'nbOfAccess', nbOfAccess );
     console.log("Nonbre d'access de "+long_url+" => "+nbOfAccess);
 
+    // We add/update the element accessed in the sorted list of urls
+    // by number of access
+    redisClient.zadd( 'urlsByAccess', nbOfAccess, long_url_id );
+
     console.log("going to redirect to "+long_url);
     // We update the number of successfull redirections
     redisClient.incr('nbOfAccess:success');
@@ -115,6 +135,70 @@ function *redirect(){
   console.log("Done");
 }
 
+// Function that will create a new user and return the corresponding id
+function *addUser(){
+
+  var jsonParams = yield parse.json(this);
+  if ( jsonParams == undefined )
+    this.throw(500, 'Problem with your URL param');
+
+  var name = jsonParams.name;
+  if ( name == undefined )
+    this.throw(500, 'Problem with your URL param');
+
+
+  // We check if there is alreasy an existing user with this name
+  var existingUserId = yield redisClient.hget( 'user_name_to_user_id', name);
+  if ( existingUserId != undefined )
+    this.throw(500, 'Already existing userName');
+
+  // Going to get the new userId
+  var userId = yield redisClient.incr( 'next.users,id' );
+  if ( userId == undefined )
+    this.throw(500, 'Internal error, could\'t incr user id');
+
+  var creationDate = new Date();
+  // Now we add all the info to the hashes in DB
+  redisClient.hset( 'user_name_to_user_id', name, userId);
+  redisClient.hset( 'user:'+userId, 'name', name);
+  redisClient.hset( 'user:'+userId, 'createdAt', creationDate.getTime());
+  redisClient.hset( 'user_id_to_user_name', userId, name);
+
+  console.log('Created a new user #'+userId+' named '+name+' born at '+creationDate);
+
+  // We return directly the link for easy parsing
+  this.body = userId;
+
+  console.log("Done");
+}
+
+// Function that will create a new session for an existing user and return it
+function *createSession(){
+
+  var jsonParams = yield parse.json(this);
+  if ( jsonParams == undefined )
+    this.throw(500, 'Problem with your URL param');
+
+  var userId = jsonParams.userId;
+  if ( userId == undefined )
+    this.throw(500, 'Problem with your URL param');
+
+  // We check if there is alreasy an existing user with this name
+  var userName = yield redisClient.hget( 'user:'+userId+':name');
+  if ( userName == undefined )
+    this.throw(500, 'Unknown User');
+
+  // Going to create the new sessionToken
+  // TODO
+  var newSession;
+
+  console.log('Created a new user session #'+newSession+' for '+name);
+
+  // We return directly the link for easy parsing
+  this.body = newSession;
+
+  console.log("Done");
+}
 app.listen(appPort);
 
 console.log('App listening on port '+appPort);
