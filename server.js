@@ -79,6 +79,15 @@ function *shorten(){
     redisClient.hset( 'url:'+newId, 'sha', short_url);
     redisClient.hset( 'short_to_url_id', short_url, newId);
   }
+
+  // If this was done by a real user, add the link to its w000ted list
+  if (userId) {
+    redisClient.sadd( 'user:'+userId+':w000t_list', url);
+  }
+
+  // We add the link to the full list of w000ted urls
+  redisClient.sadd( 'global:w000t_list', url);
+
   console.log('Good : '+url+' became '+short_url);
 
   // We return directly the link for easy parsing
@@ -153,7 +162,7 @@ function *addUser(){
     this.throw(500, 'Already existing userName');
 
   // Going to get the new userId
-  var userId = yield redisClient.incr( 'next.users,id' );
+  var userId = yield redisClient.incr( 'next.users.id' );
   if ( userId == undefined )
     this.throw(500, 'Internal error, could\'t incr user id');
 
@@ -183,19 +192,29 @@ function *createSession(){
   if ( userId == undefined )
     this.throw(500, 'Problem with your URL param');
 
-  // We check if there is alreasy an existing user with this name
-  var userName = yield redisClient.hget( 'user:'+userId+':name');
+  // We check if there is already an existing user with this name
+  var userName = yield redisClient.hget( 'user:'+userId, 'name');
   if ( userName == undefined )
     this.throw(500, 'Unknown User');
 
-  // Going to create the new sessionToken
-  // TODO
-  var newSession;
+  // We check if there is already an existing session for this user
+  var currentSession = yield redisClient.hget( 'user:'+userId, 'session_id');
+  if ( currentSession != undefined ) {
+    // If yes, we delete it
+    redisClient.hdel( 'session_id_to_user_id', currentSession );
+  }
 
-  console.log('Created a new user session #'+newSession+' for '+name);
+  // Going to create the new sessionToken
+  var sessionId = crypto.randomBytes(20).toString('hex');
+
+  // We now set the session id of the user and add it to the session_id_to_user_id correspondance hash
+  redisClient.hset( 'session_id_to_user_id', sessionId, userId);
+  redisClient.hset( 'user:'+userId ,'session_id', sessionId);
+
+  console.log('Created a new user session #'+sessionId+' for '+userName);
 
   // We return directly the link for easy parsing
-  this.body = newSession;
+  this.body = sessionId;
 
   console.log("Done");
 }
